@@ -8,6 +8,7 @@ use App\Actions\CreateCommitImages;
 use App\Dto\NewPoll;
 use App\Enums\PollDuration;
 use App\Models\Commit;
+use App\Models\Tag;
 use App\Models\User;
 use App\Rules\CommitBodyLength;
 use App\Rules\VisibleCommit;
@@ -90,6 +91,8 @@ final class CreateCommitRequest extends FormRequest
             'body' => self::bodyRules($this->hasFile('images')),
             'quoted_commit_id' => ['nullable', 'uuid', 'prohibits:parent_id', new VisibleCommit($user, 'That commit is no longer available to quote.')],
             'link_preview_url' => ['nullable', 'string', Rule::in(is_string($body) ? resolve(Urls::class)->all($body) : [])],
+            'tags' => ['nullable', 'list', 'max:'.Tag::MAX_PER_COMMIT],
+            'tags.*' => ['required', 'string', 'max:'.Tag::MAX_NAME_LENGTH, 'regex:'.Tag::PATTERN],
             ...$attachmentRules,
         ];
     }
@@ -101,7 +104,22 @@ final class CreateCommitRequest extends FormRequest
     {
         return [
             'image_descriptions.*' => 'image description',
+            'tags.*' => 'tag',
         ];
+    }
+
+    /**
+     * The tags as they will be stored: normalized, so "Design Systems" and "design_systems" are one tag, with blanks
+     * dropped and repeats collapsed before they reach the rules above.
+     *
+     * @return list<string>
+     */
+    public function tags(): array
+    {
+        /** @var list<string> $tags */
+        $tags = $this->array('tags');
+
+        return $tags;
     }
 
     public function poll(): ?NewPoll
@@ -172,5 +190,19 @@ final class CreateCommitRequest extends FormRequest
     public function prepareForValidation(): void
     {
         self::normalizeBody($this);
+
+        if (is_array($this->input('tags'))) {
+            /** @var list<mixed> $typed */
+            $typed = $this->input('tags');
+
+            $normalized = array_map(
+                fn (mixed $tag): string => is_string($tag) ? Tag::normalize($tag) : '',
+                $typed,
+            );
+
+            $this->merge(['tags' => array_values(array_unique(
+                array_filter($normalized, fn (string $tag): bool => $tag !== ''),
+            ))]);
+        }
     }
 }

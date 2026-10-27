@@ -2,6 +2,15 @@ import type { User } from '@/types/auth';
 
 export type CommitStatus = 'pending' | 'approved' | 'rejected';
 
+/**
+ * A tag as it is stored: already normalized to lower case words joined by dashes, and shared by every commit that
+ * carries it.
+ */
+export type Tag = {
+    id: string;
+    name: string;
+};
+
 export type EmbedKind = 'video' | 'audio' | 'code';
 
 export type Embed = {
@@ -90,6 +99,7 @@ export type Commit = {
     parent?: (Omit<Commit, 'parent'> & { user: User }) | DeletedCommit | null;
     link_preview?: LinkPreview | null;
     poll?: Poll | null;
+    tags?: Tag[];
     quoted_commit_id: string | null;
     quoted_commit?: QuotedCommit | DeletedCommit | null;
     images?: CommitImage[];

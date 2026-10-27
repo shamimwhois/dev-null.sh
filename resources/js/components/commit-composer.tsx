@@ -13,6 +13,7 @@ import {
     imageErrorFrom,
 } from '@/components/commit-image-picker';
 import { CommitRulesDialog, useCommitRules } from '@/components/commit-rules';
+import { CommitTagInput } from '@/components/commit-tag-input';
 import {
     ComposerPollPreview,
     ComposerPreviewBody,
@@ -100,6 +101,7 @@ function CommitComposerBody({
     schedule,
     poll,
     setPoll,
+    tagsKey,
     commitRules,
     isSubmittable,
     processing,
@@ -117,6 +119,8 @@ function CommitComposerBody({
     schedule: ReturnType<typeof useCommitSchedule>;
     poll: PollDraft | null;
     setPoll: (poll: PollDraft | null) => void;
+    // Changing this remounts the tag field, which is how a posted commit's tags are cleared from it.
+    tagsKey: number;
     commitRules: ReturnType<typeof useCommitRules>;
     isSubmittable: boolean;
     processing: boolean;
@@ -359,6 +363,8 @@ function CommitComposerBody({
                         </div>
                     )}
 
+                    <CommitTagInput key={tagsKey} id={id} />
+
                     {isScheduling && (
                         <div
                             id={`${id}-schedule`}
@@ -588,6 +594,7 @@ export function CommitComposer({
         stash.key,
     );
     const [poll, setPoll] = useState<PollDraft | null>(null);
+    const [tagsKey, setTagsKey] = useState(0);
     const commitRules = useCommitRules();
     const isPosting = useRef(false);
 
@@ -696,6 +703,7 @@ export function CommitComposer({
                 setIsScheduling(false);
                 attachments.clear();
                 setPoll(null);
+                setTagsKey((key) => key + 1);
 
                 if (onCommitted) {
                     onCommitted();
@@ -718,6 +726,7 @@ export function CommitComposer({
                         schedule={schedule}
                         poll={poll}
                         setPoll={setPoll}
+                        tagsKey={tagsKey}
                         commitRules={commitRules}
                         isSubmittable={isSubmittable}
                         processing={processing}

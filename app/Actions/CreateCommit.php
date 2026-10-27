@@ -30,6 +30,7 @@ final readonly class CreateCommit
         private CreateQuoteNotifications $createQuoteNotifications,
         private CreateMentionNotifications $createMentionNotifications,
         private CreateCommitImages $createCommitImages,
+        private CreateCommitTags $createCommitTags,
         private CreateWorldReply $createWorldReply,
         private UpdateCommitHotScores $updateCommitHotScores,
         private TheAlgorithm $theAlgorithm,
@@ -46,8 +47,9 @@ final readonly class CreateCommit
      *
      * @param  list<UploadedFile>  $images
      * @param  array<int, string|null>  $imageDescriptions
+     * @param  list<string>  $tags  normalized names, as the form request leaves them
      */
-    public function handle(User $user, string $body, ?Commit $parent = null, ?Commit $quotedCommit = null, array $images = [], array $imageDescriptions = [], bool|string $linkPreview = true, ?NewPoll $poll = null): Commit
+    public function handle(User $user, string $body, ?Commit $parent = null, ?Commit $quotedCommit = null, array $images = [], array $imageDescriptions = [], bool|string $linkPreview = true, ?NewPoll $poll = null, array $tags = []): Commit
     {
         $url = match ($linkPreview) {
             true => $this->urls->first($body),
@@ -55,7 +57,7 @@ final readonly class CreateCommit
             default => $linkPreview,
         };
 
-        return DB::transaction(function () use ($user, $body, $parent, $quotedCommit, $images, $imageDescriptions, $url, $poll): Commit {
+        return DB::transaction(function () use ($user, $body, $parent, $quotedCommit, $images, $imageDescriptions, $url, $poll, $tags): Commit {
             $linkPreview = $this->linkPreviewFor($url);
             $createdAt = now();
             $hasGoodReputation = $user->hasGoodReputation();
@@ -73,6 +75,7 @@ final readonly class CreateCommit
             ]);
 
             $this->createCommitImages->handle($commit, $images, $imageDescriptions);
+            $this->createCommitTags->handle($commit, $tags);
 
             if ($poll instanceof NewPoll) {
                 $this->createPoll($commit, $poll);

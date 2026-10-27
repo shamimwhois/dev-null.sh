@@ -11,6 +11,7 @@ import { CommitPoll } from '@/components/commit-poll';
 import { CommitQuoteButton } from '@/components/commit-quote-button';
 import { CommitSecondaryActions } from '@/components/commit-secondary-actions';
 import { CommitStarButton } from '@/components/commit-star-button';
+import { CommitTags } from '@/components/commit-tags';
 import { CommitStatusBadge } from '@/components/commit-status-badge';
 import {
     ShowThreadLink,
@@ -477,6 +478,7 @@ export function CommitCard({
                                     poll={commit.poll}
                                 />
                             )}
+                            <CommitTags tags={commit.tags ?? []} />
                             {commit.quoted_commit_id !== null && (
                                 <QuotedCommit
                                     commit={commit.quoted_commit ?? null}
